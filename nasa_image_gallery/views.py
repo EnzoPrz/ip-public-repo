@@ -5,10 +5,10 @@ from django.shortcuts import redirect, render, HttpResponse
 from .layers.services import services_nasa_image_gallery 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
-from django.contrib import messages
 from django.contrib.auth.models import User
 from django.urls import reverse
 from .layers.generic import mapper
+from django.views import View
 
 
 def signup_view(request):
@@ -18,28 +18,37 @@ def signup_view(request):
         email= request.POST.get('email')
         pass1= request.POST.get('password1')
         pass2= request.POST.get('password2')
+
+        #Se fija si el nombre de usuario ya existe
+        if User.objects.filter(username=Uname).exists():
+            return HttpResponse("Ya existe un usuario con este nombre, reintentalo!")
+        
+        #Se fija si hay algun usuario registrado con el mismo email
+        elif User.objects.filter(email=email).exists():
+            return HttpResponse("Ya existe un usuario con este email, reintentalo!")
         #corrobora que las contraseñas coinsidan:
-        if pass1 != pass2:
-            return HttpResponse("Tus contraseñas no coinciden")
+        elif pass1 != pass2:
+            return HttpResponse("Tus contraseñas no coinciden, reintentalo!")
         
         #Crea el user, lo guarda y te redirige al login
         user = User.objects.create_user(username=Uname, email=email, password=pass1)   
+        user.save()
         return redirect('login')
-        
     return render(request, 'registration/signup.html')
+
 
 
 def login_user(request):
     if request.method == "POST":
         username= request.POST['username']
         password= request.POST['password']
+        #autenticar al usuario
         user= authenticate(request, username=username, password=password)
         if user is not None:
             login(request,user)
-            return redirect ("home")
+            return redirect ("idex-page")
         else:
-            messages.error(request,'Volve a intentar')
-            return redirect ("login")
+            return HttpResponse("Algo no salio bien, volve a intentar!")
     else:
         return render(request, 'registration/login.html')   
 
